@@ -2,8 +2,10 @@ package snowflake
 
 import (
 	"bytes"
+	"math"
 	"reflect"
 	"testing"
+	"time"
 )
 
 //******************************************************************************
@@ -36,6 +38,27 @@ func TestGenerateDuplicateID(t *testing.T) {
 			t.Errorf("x(%d) & y(%d) are the same", x, y)
 		}
 		x = y
+	}
+}
+
+// Tests whether the ratio of odd numbers and even numbers generated when called low is 1:1
+func TestLowFrequencyGenerateParityRatio(t *testing.T) {
+
+	node, _ := NewNode(1)
+
+	var evenNum, oddNum int64
+	total := 1000
+	for i := 0; i < total; i++ {
+		id := node.Generate()
+		if id.Int64()%2 == 0 {
+			oddNum++
+		} else {
+			evenNum++
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if math.Abs(float64(evenNum-oddNum))/float64(total) > 0.01 {
+		t.Fatalf("even:old %d:%d is not 1:1", evenNum, oddNum)
 	}
 }
 

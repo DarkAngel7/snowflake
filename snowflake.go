@@ -31,6 +31,12 @@ var (
 	stepMask  int64 = -1 ^ (-1 << StepBits)
 	timeShift       = NodeBits + StepBits
 	nodeShift       = StepBits
+
+	// Solve low-frequency even number bug
+	// The maximum jitter upper limit value is best set to an odd number. Note that the value must be less than or equal to MAX_STEP, which is 4095
+	maxVibrationOffset int64 = 1
+	// The step number when it crosses milliseconds, the step number +1 when it is obtained across milliseconds
+	stepOffset int64 = -1
 )
 
 const encodeBase32Map = "ybndrfg8ejkmcpqxot1uwisza345h769"
@@ -151,7 +157,9 @@ func (n *Node) Generate() ID {
 			}
 		}
 	} else {
-		n.step = 0
+		// Solve low-frequency even number bug
+		n.step = vibrateStepOffset()
+		//n.step = 0
 	}
 
 	n.time = now
@@ -162,6 +170,16 @@ func (n *Node) Generate() ID {
 	)
 
 	return r
+}
+
+func vibrateStepOffset() int64 {
+	// At different milliseconds, handle the jitter upper limit. If the jitter upper limit is exceeded, the sequenceOffset counter is returned to 0, otherwise the sequenceOffset is accumulated by 1.
+	if stepOffset >= maxVibrationOffset {
+		stepOffset = 0
+	} else {
+		stepOffset++
+	}
+	return stepOffset
 }
 
 // Int64 returns an int64 of the snowflake ID
